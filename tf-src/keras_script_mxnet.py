@@ -1,5 +1,8 @@
 from __future__ import absolute_import, print_function
 
+# This code has been adapted from the code used in headline-classifier-local.ipynb notebook to build and train a 1D CNN using Keras with an MXNet backend. You can see the instructions to do this : https://github.com/aws/sagemaker-containers#list-of-provided-environment-variables-by-sagemaker-containers.
+
+# We first import the required libraries. If a library is missing in the container build you can pass a requirements.txt file to do additional pip installs.
 
 from sagemaker_mxnet_container.training_utils import save
 import json
@@ -16,7 +19,10 @@ from keras.layers import Dense, Flatten, Dropout
 from keras.layers.convolutional import Conv1D, MaxPooling1D
 from keras.layers.embeddings import Embedding
 
+# We will use gpu or cpu context depending on the instance used.
 ctx = mx.gpu() if mx.test_utils.list_gpus() else mx.cpu()
+
+# Create helper functions to obtain the data we passed to the container via S3 channels. Here we have created three helper functions to obtain the train, test and embedding_matrix numpy files.
 
 def load_training_data(base_dir):
     X_train = np.load(os.path.join(base_dir, 'train_X.npy'))
@@ -51,6 +57,7 @@ def parse_args():
 
 if __name__ == "__main__":
     
+    # The main function of this script is the code that will be running. You will se that after obtaining the required data this is directly copied from the headline-classifier-local.ipynb notebook.
     args, unknown = parse_args()
     
     print(args)
@@ -93,6 +100,8 @@ if __name__ == "__main__":
 
     model.fit(x_train, y_train, batch_size=16, epochs=args.epochs, verbose=2)
     model.evaluate(x_test, y_test, verbose=2)
+       
+    #Finally anything we save within the model directory will be pushed to the S3 output bucket by Sagemaker. The ouput we decide to package is very flexible. In this case we are outputing information necessary for deploying our model.
     model_prefix = os.path.join(args.model_dir, 'model')
     model.save(model_prefix+'.hd5')
     data_name, data_shapes = save_mxnet_model(model=model, prefix=model_prefix,
